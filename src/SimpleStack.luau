@@ -1,59 +1,92 @@
 --!native
 --!optimize 2
-local insert = table.insert
 local tableClear = table.clear
+local tableCreate = table.create
 local tableFind = table.find
+local tableInsert = table.insert
+local tableRemove = table.remove
 
-export type Stack<T> = typeof(table.freeze({} :: {
-    Size: () -> (number),
-    IsEmpty: () -> (boolean),
-    Clear: () -> (),
-    PeekAt: (index: number) -> (T?),
-    Peek: () -> (T?),
-    Pop: () -> (T?),
-    Has: (element: T) -> (boolean),
-    Push: (value: T) -> (),
-}))
+-- Fields prefixed with `_` are internal; do not touch them directly.
+export type Stack<T> = {
+    _items: { T },
 
-return function<T>(): Stack<T>
-    local stack: { T } = {}
-    local function size(): number
-        return #stack
-    end
-    local function isEmpty(): boolean
-        return #stack == 0
-    end
-    local function clear()
-        tableClear(stack)
-    end
-    local function push(value: T): ()
-        insert(stack, value)
-    end
-    local function peekAt(index: number): T?
-        return stack[index]
-    end
-    local function pop(): T?
-        local stackHeight = #stack
-        local result = stack[stackHeight]
-        stack[stackHeight] = nil
-        return result
-    end
-    local function peek(): T?
-        return stack[#stack]
-    end
-    local function has(element: T): boolean
-        return tableFind(stack, element) ~= nil
-    end
-    
+    Size: (self: Stack<T>) -> number,
+    IsEmpty: (self: Stack<T>) -> boolean,
+    Clear: (self: Stack<T>) -> (),
+    PeekAt: (self: Stack<T>, index: number) -> T?,
+    Peek: (self: Stack<T>) -> T?,
+    Pop: (self: Stack<T>) -> T?,
+    Remove: (self: Stack<T>, value: T) -> boolean,
+    Has: (self: Stack<T>, value: T) -> boolean,
+    Push: (self: Stack<T>, value: T) -> (),
+    Iterator: (self: Stack<T>) -> () -> (number?, T?),
+}
 
-    return table.freeze({
-        Size = size,
-        IsEmpty = isEmpty,
-        Clear = clear,
-        PeekAt = peekAt,
-        Peek = peek,
-        Push = push,
-        Has = has,
-        Pop = pop
-    })
+local Stack = {}
+Stack.__index = Stack
+
+function Stack.Size<T>(self: Stack<T>): number
+    return #self._items
+end
+
+function Stack.IsEmpty<T>(self: Stack<T>): boolean
+    return #self._items == 0
+end
+
+function Stack.Clear<T>(self: Stack<T>): ()
+    tableClear(self._items)
+end
+
+function Stack.Push<T>(self: Stack<T>, value: T): ()
+    tableInsert(self._items, value)
+end
+
+function Stack.PeekAt<T>(self: Stack<T>, index: number): T?
+    return self._items[index]
+end
+
+function Stack.Peek<T>(self: Stack<T>): T?
+    return self._items[#self._items]
+end
+
+function Stack.Pop<T>(self: Stack<T>): T?
+    local items = self._items
+    local height = #items
+    local result = items[height]
+    items[height] = nil
+    return result
+end
+
+-- Removes the first occurrence of `value`. Returns whether anything was removed.
+function Stack.Remove<T>(self: Stack<T>, value: T): boolean
+    local index = tableFind(self._items, value)
+    if index == nil then
+        return false
+    end
+    tableRemove(self._items, index)
+    return true
+end
+
+function Stack.Has<T>(self: Stack<T>, value: T): boolean
+    return tableFind(self._items, value) ~= nil
+end
+
+-- Iterates from the top of the stack (last pushed) to the bottom.
+function Stack.Iterator<T>(self: Stack<T>): () -> (number?, T?)
+    local items = self._items
+    local index = #items + 1
+    return function(): (number?, T?)
+        index -= 1
+        if index < 1 then
+            return nil, nil
+        end
+        return index, items[index]
+    end
+end
+
+return function<T>(capacity: number?): Stack<T>
+    local self: Stack<T> = setmetatable({
+        _items = (if capacity then tableCreate(capacity) else {}) :: { T },
+    }, Stack) :: any
+    return self
 end
