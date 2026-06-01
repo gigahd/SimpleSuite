@@ -1,23 +1,25 @@
+--!native
+--!optimize 2
 local tableInsert = table.insert
 local tableClear = table.clear
 local tableFind = table.find
 local tableRemove = table.remove
 
 export type List<T> = typeof(table.freeze({} :: {
-    Size: () -> (number),
-    IsEmpty: () -> (boolean),
+    Size: () -> number,
+    IsEmpty: () -> boolean,
     Clear: () -> (),
-    Get: (index: number) -> (T?),
-    GetFirst: () -> (T?),
-    GetLast: () -> (T?),
-    Remove: (index: number) -> (T?),
-    RemoveFirst: () -> (T?),
-    RemoveLast: () -> (T?),
-    Has: (element: T) -> (boolean),
+    Get: (index: number) -> T?,
+    GetFirst: () -> T?,
+    GetLast: () -> T?,
+    Remove: (index: number) -> T?,
+    RemoveFirst: () -> T?,
+    RemoveLast: () -> T?,
+    Has: (element: T) -> boolean,
     Append: (value: T) -> (),
     Prepend: (value: T) -> (),
     Insert: (index: number, value: T) -> (),
-    Find: (value: T) -> (number?),
+    Find: (value: T) -> number?,
 }))
 
 return function<T>(initialLength: number?, initialValue: T?): List<T>
@@ -67,7 +69,6 @@ return function<T>(initialLength: number?, initialValue: T?): List<T>
     local function has(value: T): boolean
         return tableFind(list, value) ~= nil
     end
-    
 
     return table.freeze({
         Size = size,

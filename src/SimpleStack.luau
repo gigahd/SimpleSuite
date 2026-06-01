@@ -1,3 +1,5 @@
+--!native
+--!optimize 2
 local insert = table.insert
 local tableClear = table.clear
 local tableFind = table.find
